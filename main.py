@@ -1,15 +1,25 @@
 # This program will inform the user about the availibility to a product in an online shopping website.
+
 import random
 import requests
 import schedule
+import logging
 from time import sleep
 from lxml import html
+
+
+# Configure logging
+# Logging levels in python, sorted in increasing order based on severity: Debug, Info, Warning, Error, Critical
+# By setting the level to Info, the logging system handles all messages that are at the Info level or higher.
+# %(asctime)s displayes the time when the log message was created.
+
+logging.basicConfig( level=logging.INFO, format= '%(asctime)s - %(levelname)s - %(message)s')
 
 def check(url):
     header = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.90 Safari/537.36'}
     try:
         response = requests.get(url, headers=header, timeout=10)
-        print(f"Response status code: {response.status_code}")
+        logging.info(f"Response status code: {response.status_code}")
         response.raise_for_status()
         info = html.fromstring(response.content)
 
@@ -17,28 +27,39 @@ def check(url):
         availability = info.xpath('//div[@id ="availability"]//text()')
         return ''.join(availability).strip()
 
-    except requests.exceptions.RequestException as e:
-        print(f"Error while checking availability: {e}")
-        return None
+    except requests.exceptions.HTTPError as http_err:
+        logging.error(f"HTTP error occured: {http_err}")
+
+    except requests.exceptions.ConnectionError as con_err:
+        logging.error(f"Connection error occured: {con_err}")
+
+    except requests.exceptions.Timeout as timeout:
+        logging.error(f"Timeout error occured: {timeout}")
+
+    except requests.exceptions.RequestException as req_ex:
+        logging.error(f"Request error occured: {req_ex}")
+
+    return None
 
 def monitor_availability():
-    url = f"https://www.amazon.com/GODONLIF-Candle-Adjustable-Dimmable-Candles/dp/B0CTJGJL2T"
+    url = input("Enter the Link of the product: ")
 
-    print(f"Checking the availability for {url}")
+    logging.info(f"Checking the availability for {url}")
     availability_status = check(url)
 
     if availability_status:
-        print(f"Status: {availability_status}")
+        logging.info(f"Status: {availability_status}")
 
-        if "In Stock" in availability_status or "Only" in availability_status:
-            print("The product is available")
-        else:
-            print("Product is not available")
+        if "In Stock" in availability_status:
+            logging.info("The product is available")
+        elif "Temporarily Out of Stock" in availability_status or "Currently unavailable" in  availability_status:
+            logging.info("Product is not available")
     else:
-        print("Failed to retrieve information about availability status")
+        logging.warning("Failed to retrieve information about availability status")
 
 schedule.every(1).minutes.do(monitor_availability)
 
 while True:
     schedule.run_pending()
     sleep(random.uniform(5, 15))  # Reduced sleep time
+
