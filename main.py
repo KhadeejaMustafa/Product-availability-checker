@@ -1,4 +1,4 @@
-# This program will inform the user about the availibility to a product in an online shopping website.
+# This program will inform the user about the availibility of a product in amazon online shopping website.
 
 import random
 import requests
@@ -8,11 +8,12 @@ from time import sleep
 from lxml import html
 
 
-# Configure logging
+
 # Logging levels in python, sorted in increasing order based on severity: Debug, Info, Warning, Error, Critical
 # By setting the level to Info, the logging system handles all messages that are at the Info level or higher.
 # %(asctime)s displayes the time when the log message was created.
 
+# Configure logging
 logging.basicConfig( level=logging.INFO, format= '%(asctime)s - %(levelname)s - %(message)s')
 
 def check(url):
@@ -42,7 +43,7 @@ def check(url):
     return None
 
 def monitor_availability():
-    url = input("Enter the Link of the product: ")
+    url = ask_user
 
     logging.info(f"Checking the availability for {url}")
     availability_status = check(url)
@@ -50,16 +51,22 @@ def monitor_availability():
     if availability_status:
         logging.info(f"Status: {availability_status}")
 
-        if "In Stock" in availability_status:
+        if "In stock" in availability_status:
             logging.info("The product is available")
-        elif "Temporarily Out of Stock" in availability_status or "Currently unavailable" in  availability_status:
-            logging.info("Product is not available")
-    else:
-        logging.warning("Failed to retrieve information about availability status")
 
+        elif "Temporarily Out of Stock" in availability_status or "Currently unavailable" in availability_status:
+            logging.info("The product is not available.")
+
+        elif "Only" in availability_status and "left in stock" in availability_status:
+           logging.info("The product is available but only a limited quantity is left")
+            
+    else:
+        logging.warning("Failed to retrieve information about availability status.")
+
+print("---- Product Availability Checker (Amazon) ----\n")
+ask_user = input("Please enter link of the product: ") # Example: https://amzn.eu/d/g9PIiD1
 schedule.every(1).minutes.do(monitor_availability)
 
 while True:
     schedule.run_pending()
     sleep(random.uniform(5, 15))  # Reduced sleep time
-
